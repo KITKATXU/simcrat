@@ -1,66 +1,44 @@
-# Tymcrat
+# simcrat-gpt4o
 
-**T**ype-**M**igrating **C**-to-**R**ust **A**utomatic **T**ranslator
+[GitHub - kaist-plrg/simcrat](https://github.com/kaist-plrg/simcrat): *Type-Migrating C-to-Rust Translation using a Large Language Model*
 
-This repository provides the implementation of the tool Tymcrat of the paper
-*Type-Migrating C-to-Rust Translation using a Large Language Model* and the
-evaluation scripts.
+## Update
 
-## Build
+Updated to support Claude 3.5 version: `./run-claude35.sh`
 
-The following commands build Tymcrat:
+- **gzip-1.12**: 
+  - 6383 LOC
+  - 41 Types
+  - 151 Variables
+  - 20 Protos
+  - 220 Functions
+  - 1144 Calls
 
-```bash
-cd ~
-git clone https://github.com/kaist-plrg/simcrat.git tymcrat
-cd tymcrat
-rustup component add rust-src rustc-dev llvm-tools-preview
-cd deps_crate
-cargo build
-cd ..
-cargo build --release
-```
+#### Method
 
-## Benchmark Setup
+1. Let LLM generate a specified number of candidate function signatures.
+2. Provide the function signatures to the caller function for translation.
+3. Let LLM compare the translation quality of different function definitions.
 
-The following commands set up the benchmark programs.
+#### Experimental Attempts
 
-```bash
-cd ~
-tymcrat/scripts/gnu.sh
-```
+| Model      | Request Tokens | Response Tokens | Response Time (s) | LOC  | Func | Errors | Warnings |
+|------------|----------------|------------------|--------------------|------|------|--------|----------|
+| Gpt-35     |                |                  |                    | 7047 | 248  | 884    | 86       |
+| Gpt-4o     | 541042         | 916480           | 3405.4412          | 7783 | 247  | 487    | 34       |
+| Claude-35  | 498517         | 931402           | 795.5489           | 6906 | 246  | 207    | 12       |
 
-## Evaluation
+    
+#### Translation Results
 
-The following commands run the evaluation scripts:
+**Strengths**
+- Translated types, variables, and functions one by one, with the output also following this order.
+- Very organized and appearing to have no omissions in any of the aforementioned definitions.
 
-```bash
-cd ~/tymcrat
-scripts/run.sh 0 0
-scripts/run.sh 0 1
-scripts/run.sh 0 2
-scripts/run.sh 0 3
-scripts/run.sh 1 0
-scripts/run.sh 1 1
-scripts/run.sh 1 2
-scripts/run.sh 1 3
-scripts/run.sh 2 0
-scripts/run.sh 2 1
-scripts/run.sh 2 2
-scripts/run.sh 2 3
-scripts/run.sh 3 0
-scripts/run.sh 3 1
-scripts/run.sh 3 2
-scripts/run.sh 3 3
-scripts/run.sh 4 0
-scripts/run.sh 4 1
-scripts/run.sh 4 2
-scripts/run.sh 4 3
-```
-
-* The first argument decides the number of candidate signatures.
-* The second argument decides:
-  * 0: fix - yes, augmentation - yes
-  * 1: fix - no, augmentation - yes
-  * 2: fix - yes, augmentation - no
-  * 3: fix - no, augmentation - no
+**Weaknesses**
+- Empty main function.
+- Unsafe code blocks.
+- Increased Number of Functions:
+Reason: A significant portion of these new functions are defined within the bodies of existing functions. Many are related to error handling; for instance, the goto statements supported in C are translated into new function declarations in Rust, such as goto_fail, goto_name_too_long, etc.
+- Calls to Non-Existent Functions:
+Despite the fact that all callee function declarations were passed in according to the call graph, the translated functions still invoke non-existent functions that have not been implemented.
